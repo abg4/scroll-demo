@@ -29,6 +29,22 @@ export const networks: Network[] = [
     imgUrl: "https://cryptologos.cc/logos/arbitrum-arb-logo.svg",
     explorerUrl: "https://arbiscan.io",
   },
+  {
+    chainId: 10,
+    name: "Optimism",
+    usdcAddress: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    spokePoolAddress: "0x6f26Bf09B1C792e3228e5467807a900A503c0281",
+    imgUrl: "https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg",
+    explorerUrl: "https://optimistic.etherscan.io/",
+  },
+  {
+    chainId: 8453,
+    name: "Base",
+    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    spokePoolAddress: "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64",
+    imgUrl: "https://raw.githubusercontent.com/base-org/brand-kit/10f77e1f8f27e719c181973384f4cc967d9c4d36/logo/in-product/Base_Network_Logo.svg",
+    explorerUrl: "https://basescan.org/",
+  },
 ];
 
 export const scrollConfig: Network = {
