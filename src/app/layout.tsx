@@ -1,22 +1,35 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+"use client";
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { WagmiProvider } from "@privy-io/wagmi";
+import { Header } from "./components/Header";
 import "./globals.css";
+import { wagmiConfig } from "./configs/wagmiConfig";
+import { privyConfig } from "./configs/privyConfig";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "Scroll Demo",
-  description: "Across + Scroll Demo",
-};
+const queryClient = new QueryClient();
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body>
+        <QueryClientProvider client={queryClient}>
+          <PrivyProvider
+            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+            config={privyConfig}
+          >
+            <WagmiProvider config={wagmiConfig}>
+              <Header />
+              {children}
+            </WagmiProvider>
+          </PrivyProvider>
+        </QueryClientProvider>
+      </body>
     </html>
   );
 }

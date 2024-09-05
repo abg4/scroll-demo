@@ -1,0 +1,29 @@
+.tab-container {
+  display: flex;
+  justify-content: center; /* Center the tabs horizontally */
+  margin-bottom: 20px; /* Space between tabs and content */
+}
+
+.tab {
+  padding: 10px 20px; /* Adjust padding to match WalletConnectButton */
+  cursor: pointer;
+  background-color: transparent; /* Make background transparent */
+  color: #6cf9d8; /* Match the text color */
+  border: 2px solid #6cf9d8; /* Match the border style */
+  border-radius: 5px;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for background and color */
+  font-size: 16px; /* Adjust font size for consistency */
+  margin: 0 10px; /* Add margin between tabs */
+}
+
+.tab:hover {
+  background-color: #6cf9d8; /* Change background on hover */
+  color: black; /* Change text color on hover */
+}
+
+.active-tab {
+  background-color: #6cf9d8; /* Active tab color */
+  color: black; /* Active text color */
+  font-weight: bold; /* Make active tab bold */
+  border: 2px solid #6cf9d8; /* Keep border consistent */
+}
