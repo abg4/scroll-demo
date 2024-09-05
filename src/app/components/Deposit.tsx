@@ -269,12 +269,21 @@ const Deposit: React.FC = () => {
           <button
             onClick={handleApproveOrDeposit}
             className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
-            disabled={!selectedNetwork}
+            disabled={
+              !selectedNetwork ||
+              rawAmount === "" ||
+              rawAmount === "0" ||
+              (balance && BigNumber.from(rawAmount).gt(balance))
+            }
           >
             {!address
               ? "Connect Wallet"
               : isWrongNetwork
               ? "Switch Network"
+              : rawAmount === "" || rawAmount === "0"
+              ? "Input Amount"
+              : balance && BigNumber.from(rawAmount).gt(balance) // Check if rawAmount is greater than balance
+              ? "Amount > Balance"
               : needsApproval
               ? isApproving
                 ? "Approving..."
