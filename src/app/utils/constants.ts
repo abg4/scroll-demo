@@ -40,3 +40,12 @@ export const scrollConfig: Network = {
   multicallHandler: "0x924a9f036260DdD5808007E1AA95f08eD08aA569",
   explorerUrl: "https://scrollscan.com",
 };
+
+export const initialAccountData = {
+  totalCollateralBase: BigInt(0),
+  totalDebtBase: BigInt(0),
+  availableBorrowsBase: BigInt(0),
+  currentLiquidationThreshold: BigInt(0),
+  ltv: BigInt(0),
+  healthFactor: BigInt(0),
+};

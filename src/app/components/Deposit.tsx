@@ -219,13 +219,11 @@ const Deposit: React.FC = () => {
             <div className={styles["label-balance-container"]}>
               <label className={styles["input-label"]}>Amount</label>
               <span className={styles["balance"]}>
-                {isBalanceLoading
-                  ? "Loading..."
-                  : isBalanceError
-                  ? "Error"
-                  : balance
-                  ? `${prettyUsdc(balance.toString(), 2)} USDC`
-                  : "0"}
+                Balance:{" "}
+                {isBalanceLoading || isBalanceError
+                  ? "0"
+                  : prettyUsdc(balance?.toString() || "0", 2)}{" "}
+                USDC
               </span>
             </div>
             <div className={styles["input-max-container"]}>

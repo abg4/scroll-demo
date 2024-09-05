@@ -1,5 +1,5 @@
 import { useReadContract } from "wagmi";
-import { aavePoolAbi, aaveConfig, scrollConfig } from "../utils";
+import { aavePoolAbi, aaveConfig, scrollConfig, initialAccountData } from "../utils";
 import { AccountData } from "../types";
 
 const useAccountData = (address: string | undefined) => {
@@ -21,7 +21,7 @@ const useAccountData = (address: string | undefined) => {
         ltv: accountDataArray[4],
         healthFactor: accountDataArray[5],
       }
-    : undefined;
+    : initialAccountData;
 };
 
 export default useAccountData;
