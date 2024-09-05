@@ -271,7 +271,9 @@ const Deposit: React.FC = () => {
             className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
             disabled={!selectedNetwork}
           >
-            {isWrongNetwork
+            {!address
+              ? "Connect Wallet"
+              : isWrongNetwork
               ? "Switch Network"
               : needsApproval
               ? isApproving
