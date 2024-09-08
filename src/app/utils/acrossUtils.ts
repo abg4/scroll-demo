@@ -1,6 +1,6 @@
 import { QuoteParams, QuoteResponse } from "../types";
 import { ethers } from "ethers";
-import { aaveConfig } from "./constants";
+import { aaveDepositContract } from "./constants";
 
 export const getQuote = async ({
   inputToken,
@@ -56,7 +56,7 @@ export function generateMessageForMulticallHandler(
   ]);
 
   const approveCalldata = erc20Interface.encodeFunctionData("approve", [
-    aaveConfig.depositContract,
+    aaveDepositContract,
     depositAmount,
   ]);
   const depositCalldata = depositInterface.encodeFunctionData("supply", [
@@ -81,7 +81,7 @@ export function generateMessageForMulticallHandler(
       [
         [
           [outputToken, approveCalldata, 0],
-          [aaveConfig.depositContract, depositCalldata, 0],
+          [aaveDepositContract, depositCalldata, 0],
         ],
         userAddress,
       ],

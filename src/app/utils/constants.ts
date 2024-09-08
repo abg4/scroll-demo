@@ -1,8 +1,6 @@
 import { Network } from "../types";
 
-export const aaveConfig = {
-  depositContract: "0x11fCfe756c05AD438e312a7fd934381537D3cFfe",
-};
+export const aaveDepositContract = "0x11fCfe756c05AD438e312a7fd934381537D3cFfe";
 
 export const networks: Network[] = [
   {
@@ -19,7 +17,7 @@ export const networks: Network[] = [
     usdcAddress: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
     spokePoolAddress: "0x9295ee1d8C5b022Be115A2AD3c30C72E34e7F096",
     imgUrl: "https://cryptologos.cc/logos/polygon-matic-logo.svg",
-    explorerUrl: "https://polygonscan.com", 
+    explorerUrl: "https://polygonscan.com",
   },
   {
     chainId: 42161,
@@ -42,7 +40,8 @@ export const networks: Network[] = [
     name: "Base",
     usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     spokePoolAddress: "0x09aea4b2242abC8bb4BB78D537A67a245A7bEC64",
-    imgUrl: "https://raw.githubusercontent.com/base-org/brand-kit/10f77e1f8f27e719c181973384f4cc967d9c4d36/logo/in-product/Base_Network_Logo.svg",
+    imgUrl:
+      "https://raw.githubusercontent.com/base-org/brand-kit/10f77e1f8f27e719c181973384f4cc967d9c4d36/logo/in-product/Base_Network_Logo.svg",
     explorerUrl: "https://basescan.org/",
   },
 ];

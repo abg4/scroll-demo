@@ -1,10 +1,10 @@
 import { useReadContract } from "wagmi";
-import { aavePoolAbi, aaveConfig, scrollConfig, initialAccountData } from "../utils";
+import { aavePoolAbi, aaveDepositContract, scrollConfig, initialAccountData } from "../utils";
 import { AccountData } from "../types";
 
 const useAccountData = (address: string | undefined) => {
   const { data: accountData } = useReadContract({
-    address: aaveConfig.depositContract as `0x${string}` | undefined,
+    address: aaveDepositContract as `0x${string}` | undefined,
     abi: aavePoolAbi,
     functionName: "getUserAccountData",
     args: address ? [address] : undefined,
