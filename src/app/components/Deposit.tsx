@@ -175,6 +175,10 @@ const Deposit: React.FC = () => {
             message,
           };
           const quoteResponse = await getQuote(quoteParams);
+          if (!quoteResponse) {
+            console.log("Issue with quote");
+            return;
+          }
           setQuote(quoteResponse);
         } catch (error) {
           console.error("Error fetching quote:", error);

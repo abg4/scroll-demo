@@ -10,26 +10,15 @@ export const getQuote = async ({
   amount,
   recipient,
   message,
-}: QuoteParams): Promise<QuoteResponse> => {
+}: QuoteParams): Promise<QuoteResponse | undefined> => {
   try {
-    let response;
-    if (recipient) {
-      response = await fetch(
-        `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}&recipient=${recipient}&message=${message}`
-      );
-      console.log(
-        "quote url",
-        `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}&recipient=${recipient}&message=${message}`
-      );
-    } else {
-      response = await fetch(
-        `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}`
-      );
-      console.log(
-        "quote url",
-        `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}`
-      );
-    }
+    let response = await fetch(
+      `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}&recipient=${recipient}&message=${message}`
+    );
+    console.log(
+      "quote url",
+      `https://app.across.to/api/suggested-fees?token=${inputToken}&outputToken=${outputToken}&originChainId=${originChainId}&destinationChainId=${destinationChainId}&amount=${amount}&recipient=${recipient}&message=${message}`
+    );
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }

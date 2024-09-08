@@ -14,8 +14,8 @@ export interface QuoteParams {
   originChainId: number;
   destinationChainId: number;
   amount: string;
-  recipient?: string;
-  message?: string;
+  recipient: string | undefined;
+  message: string;
 }
 
 export interface QuoteResponse {
