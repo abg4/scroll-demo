@@ -55,116 +55,17 @@ const Deposit: React.FC = () => {
   const accountDataObject = useAccountData(address);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedRawAmount(rawAmount);
-    }, 1000); // 1 second debounce
-
-    return () => {
-      clearTimeout(handler); // Cleanup the timeout on unmount or when rawAmount changes
-    };
-  }, [rawAmount]);
-
-  const handleNetworkSelect = (network: Network) => {
-    setSelectedNetwork(network);
-    setIsModalOpen(false);
-  };
-
-  const handleApprove = async () => {
-    if (!selectedNetwork || !rawAmount) return;
-    setIsApproving(true);
-    try {
-      writeContract({
-        address: selectedNetwork.usdcAddress as `0x${string}`,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [selectedNetwork.spokePoolAddress, BigNumber.from(rawAmount)],
-      });
-    } catch (error) {
-      console.error("Error approving token:", error);
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleDeposit = async () => {
-    try {
-      const outputAmount = BigNumber.from(rawAmount).sub(
-        quote?.totalRelayFee?.total || 0
-      );
-      const fillDeadlineBuffer = 18000;
-      const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-
-      const message = generateMessageForMulticallHandler(
-        outputAmount.toString(),
-        scrollConfig.usdcAddress,
-        address as `0x${string}`
-      );
-
-      const args = [
-        address,
-        scrollConfig.multicallHandler,
-        selectedNetwork?.usdcAddress,
-        scrollConfig.usdcAddress,
-        rawAmount.toString(),
-        outputAmount.toString(),
-        scrollConfig.chainId,
-        quote?.exclusiveRelayer,
-        quote?.timestamp,
-        fillDeadline,
-        quote?.exclusivityDeadline,
-        message,
-      ];
-
-      writeContract({
-        address: selectedNetwork?.spokePoolAddress as `0x${string}`,
-        abi: spokePoolAbi,
-        functionName: "depositV3",
-        args,
-      });
-    } catch (error) {
-      console.error("Error making deposit:", error);
-    }
-  };
-
-  const handleApproveOrDeposit = () => {
-    if (isWrongNetwork) {
-      handleNetworkSwitch();
-    } else if (needsApproval) {
-      handleApprove();
-    } else {
-      handleDeposit();
-    }
-  };
-
-  const handleMaxClick = () => {
-    if (balance) {
-      setRawAmount(balance.toString());
-      setDisplayAmount(prettyUsdc(balance.toString(), 2));
-    }
-  };
-
-  const isWrongNetwork = selectedNetwork && chainId !== selectedNetwork.chainId;
-
-  const handleNetworkSwitch = async () => {
-    if (selectedNetwork) {
-      try {
-        await switchChain({ chainId: selectedNetwork.chainId });
-      } catch (error) {
-        console.error("Failed to switch network:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
     const fetchQuote = async () => {
       if (selectedNetwork && rawAmount && address) {
         try {
+          // Generates a message for the quote
           const message = generateMessageForMulticallHandler(
             rawAmount,
             scrollConfig.usdcAddress,
             address
           );
 
+          // Quote params used for API request
           const quoteParams: QuoteParams = {
             inputToken: selectedNetwork.usdcAddress,
             outputToken: scrollConfig.usdcAddress, // Assuming Ethereum as the destination chain
@@ -191,6 +92,114 @@ const Deposit: React.FC = () => {
 
     fetchQuote();
   }, [selectedNetwork, debouncedRawAmount, address]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedRawAmount(rawAmount);
+    }, 1000); // 1 second debounce
+
+    return () => {
+      clearTimeout(handler); // Cleanup the timeout on unmount or when rawAmount changes
+    };
+  }, [rawAmount]);
+
+  const handleDeposit = async () => {
+    try {
+      if (!quote) {
+        console.log("No quote generated");
+        return;
+      }
+      const outputAmount = BigNumber.from(rawAmount).sub(
+        quote?.totalRelayFee?.total || 0
+      );
+
+      const message = generateMessageForMulticallHandler(
+        outputAmount.toString(),
+        scrollConfig.usdcAddress,
+        address as `0x${string}`
+      );
+
+      const fillDeadlineBuffer = 18000;
+      const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
+      
+      // See Across docs for explanation on each arg
+      // https://docs.across.to/reference/selected-contract-functions
+      const args = [
+        address, // depositor
+        scrollConfig.multicallHandler, // recipient
+        selectedNetwork?.usdcAddress, // inputToken
+        scrollConfig.usdcAddress, // outputToken
+        rawAmount.toString(), // inputAmount
+        outputAmount.toString(), // outputAmount
+        scrollConfig.chainId, // destination chainId
+        quote?.exclusiveRelayer, // exclusive relayer
+        quote?.timestamp, // quote timestamp
+        fillDeadline, // fill deadline
+        quote?.exclusivityDeadline, // exclusivityDeadline 
+        message, // message
+      ];
+
+      writeContract({
+        address: selectedNetwork?.spokePoolAddress as `0x${string}`,
+        abi: spokePoolAbi,
+        functionName: "depositV3",
+        args,
+      });
+    } catch (error) {
+      console.error("Error making deposit:", error);
+    }
+  };
+
+  const handleNetworkSelect = (network: Network) => {
+    setSelectedNetwork(network);
+    setIsModalOpen(false);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedNetwork || !rawAmount) return;
+    setIsApproving(true);
+    try {
+      writeContract({
+        address: selectedNetwork.usdcAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [selectedNetwork.spokePoolAddress, BigNumber.from(rawAmount)],
+      });
+    } catch (error) {
+      console.error("Error approving token:", error);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleApproveOrDeposit = () => {
+    if (isWrongNetwork) {
+      handleNetworkSwitch();
+    } else if (needsApproval) {
+      handleApprove();
+    } else {
+      handleDeposit();
+    }
+  };
+
+  const handleMaxClick = () => {
+    if (balance) {
+      setRawAmount(balance.toString());
+      setDisplayAmount(prettyUsdc(balance.toString(), 2));
+    }
+  };
+
+  const handleNetworkSwitch = async () => {
+    if (selectedNetwork) {
+      try {
+        await switchChain({ chainId: selectedNetwork.chainId });
+      } catch (error) {
+        console.error("Failed to switch network:", error);
+      }
+    }
+  };
+
+  const isWrongNetwork = selectedNetwork && chainId !== selectedNetwork.chainId;
 
   return (
     <div className={styles["network-selector"]}>
