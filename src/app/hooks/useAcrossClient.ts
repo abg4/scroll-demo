@@ -1,4 +1,4 @@
-import { createAcrossClient, AcrossClient } from "@across-protocol/app-sdk";
+import { createAcrossClient } from "@across-protocol/app-sdk";
 import {
   mainnet,
   polygon,
@@ -10,11 +10,17 @@ import {
 import { integratorId } from "../utils/constants";
 import { createWalletClient, custom, type Chain } from "viem";
 
+declare global {
+  interface Window {
+    ethereum?: any; // or a more specific type if known
+  }
+}
+
 const useAcrossClient = (
   address: `0x${string}` | undefined,
   chain: Chain | null
-): { acrossClient?: AcrossClient; viemClient?: any } => {
-  if (!address || !window.ethereum || !chain)
+): { acrossClient?: any; viemClient?: any } => {
+  if (!address || !window?.ethereum || !chain)
     return { acrossClient: undefined, viemClient: undefined };
 
   const viemClient = createWalletClient({

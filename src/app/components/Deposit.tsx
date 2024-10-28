@@ -44,9 +44,7 @@ const Deposit: React.FC = () => {
   const [debouncedRawAmount, setDebouncedRawAmount] = useState(rawAmount);
   const [activeTab, setActiveTab] = useState<"deposit" | "position">("deposit");
 
-  const { acrossClient, viemClient } = address
-    ? useAcrossClient(address, selectedNetwork)
-    : { acrossClient: undefined, viemClient: undefined as any };
+  const { acrossClient, viemClient } = useAcrossClient(address, selectedNetwork);
   const { needsApproval } = useAllowance(address, selectedNetwork, rawAmount);
   const { balance, isBalanceError, isBalanceLoading } = useBalance(
     address,
@@ -116,7 +114,7 @@ const Deposit: React.FC = () => {
       await acrossClient.executeQuote({
         deposit: quote.deposit,
         walletClient: viemClient,
-        onProgress: (progress) => {
+        onProgress: (progress: any) => {
           if (progress.status === "txSuccess" && progress.step === "deposit") {
             const depositUrl = `${selectedNetwork?.blockExplorers?.default.url}/tx/${progress.txReceipt.transactionHash}`;
             setDepositTxUrl(depositUrl);

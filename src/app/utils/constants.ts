@@ -6,7 +6,7 @@ import {
   optimism,
   base,
   scroll,
-} from "wagmi/chains";
+} from "viem/chains";
 
 export const integratorId = "0xdead";
 
