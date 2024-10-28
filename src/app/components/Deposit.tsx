@@ -5,20 +5,11 @@ import { BigNumber } from "ethers";
 import { Network } from "../types";
 import { networks, prettyUsdc, scrollConfig } from "../utils";
 import styles from "./Deposit.module.css";
-import {
-  generateMessageForMulticallHandler,
-  erc20Abi,
-  scaleUsdc,
-} from "../utils";
-import {
-  useAccount,
-  useChainId,
-  useSwitchChain,
-} from "wagmi";
+import { generateMessageForMulticallHandler, scaleUsdc } from "../utils";
+import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import NetworkModal from "./NetworkModal";
 import Tabs from "./Tabs";
 import Position from "./Position";
-import useAllowance from "../hooks/useAllowance";
 import useBalance from "../hooks/useBalance";
 import useAccountData from "../hooks/useAccountData";
 import useAcrossClient from "../hooks/useAcrossClient";
@@ -35,17 +26,17 @@ const Deposit: React.FC = () => {
   const [rawAmount, setRawAmount] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [quote, setQuote] = useState<any | null>(null);
-  
+
   const [depositTx, setDepositTxUrl] = useState<string>("");
   const [fillTx, setFillTxUrl] = useState<string>("");
-  const [approveTx, setApproveTx] = useState<string>("");
 
-  const [isApproving, setIsApproving] = useState(false);
   const [debouncedRawAmount, setDebouncedRawAmount] = useState(rawAmount);
   const [activeTab, setActiveTab] = useState<"deposit" | "position">("deposit");
 
-  const { acrossClient, viemClient } = useAcrossClient(address, selectedNetwork);
-  const { needsApproval } = useAllowance(address, selectedNetwork, rawAmount);
+  const { acrossClient, viemClient } = useAcrossClient(
+    address,
+    selectedNetwork
+  );
   const { balance, isBalanceError, isBalanceLoading } = useBalance(
     address,
     selectedNetwork
@@ -86,8 +77,6 @@ const Deposit: React.FC = () => {
           console.error("Error fetching quote:", error);
           setQuote(null);
         }
-      } else {
-        setQuote(null);
       }
     };
 
@@ -135,34 +124,9 @@ const Deposit: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const handleApprove = async () => {
-    if (!selectedNetwork || !rawAmount) return;
-    setIsApproving(true);
-    try {
-      const txResponse = await viemClient.writeContract({
-        address: selectedNetwork.usdcAddress as `0x${string}`,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [selectedNetwork.spokePoolAddress, BigNumber.from(rawAmount)],
-        chain: selectedNetwork,
-      });
-      setApproveTx(txResponse);
-      return txResponse ? true : false;
-    } catch (error) {
-      console.error("Error approving token:", error);
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const handleApproveOrDeposit = async () => {
+  const handleDepositTx = () => {
     if (isWrongNetwork) {
       handleNetworkSwitch();
-    } else if (needsApproval) {
-      const approvalTx = await handleApprove();
-      if (approvalTx) {
-        await handleDeposit();
-      }
     } else {
       handleDeposit();
     }
@@ -274,7 +238,7 @@ const Deposit: React.FC = () => {
             </button>
           ) : (
             <button
-              onClick={handleApproveOrDeposit}
+              onClick={handleDepositTx}
               className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
               disabled={
                 rawAmount === "" ||
@@ -288,47 +252,12 @@ const Deposit: React.FC = () => {
                 ? "Input Amount"
                 : balance && BigNumber.from(rawAmount).gt(balance) // Check if rawAmount is greater than balance
                 ? "Amount > Balance"
-                : needsApproval
-                ? isApproving
-                  ? "Approving..."
-                  : "Approve"
                 : "Deposit"}
             </button>
           )}
 
-          {(depositTx !== "" || fillTx !== "" || approveTx) && (
+          {(depositTx !== "" || fillTx !== "") && (
             <label className={styles["input-label"]}>Transaction Status</label>
-          )}
-
-          {approveTx && selectedNetwork?.blockExplorers?.default.url && (
-            <div style={{ textAlign: "center", margin: "10px 0" }}>
-              <button
-                onClick={() =>
-                  window.open(
-                    `${selectedNetwork?.blockExplorers?.default.url}/tx/${approveTx}`,
-                    "_blank"
-                  )
-                }
-                style={{
-                  color: "white",
-                  background: "transparent",
-                  border: "2px solid white", // Add border
-                  borderRadius: "5px", // Optional: rounded corners
-                  padding: "10px 20px", // Add padding for better appearance
-                  cursor: "pointer",
-                  transition: "background 0.3s", // Optional: transition effect
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background =
-                    "rgba(255, 255, 255, 0.1)")
-                } // Change background on hover
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                } // Reset background on mouse leave
-              >
-                Approval Tx
-              </button>
-            </div>
           )}
 
           {depositTx && (
