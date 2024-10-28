@@ -16,7 +16,7 @@ const useBalance = (
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    chainId: selectedNetwork?.chainId,
+    chainId: selectedNetwork?.id,
   });
 
   return {

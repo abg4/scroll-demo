@@ -10,14 +10,22 @@ export const scaleUsdc = (inputAmount: string): number => {
 };
 
 // Function to convert raw amount to pretty format (6 decimal places)
-export const prettyUsdc = (rawAmount: number | string, decimals: number = 6): string => {
-  const amount = typeof rawAmount === 'string' ? parseInt(rawAmount, 10) : rawAmount;
-  if (isNaN(amount)) return '0';
+export const prettyUsdc = (
+  rawAmount: bigint | string,
+  decimals: number = 6
+): string => {
+  const amount =
+    typeof rawAmount === "string" ? parseInt(rawAmount, 10) : Number(rawAmount); // Convert bigint to number
+  if (isNaN(amount)) return "0";
   return (amount / 1_000_000).toFixed(decimals);
 };
 
-export const prettyAaveValue = (rawAmount: number | string, decimals: number = 2): string => {
-  const amount = typeof rawAmount === 'string' ? parseInt(rawAmount, 10) : rawAmount;
-  if (isNaN(amount)) return '0';
+export const prettyAaveValue = (
+  rawAmount: number | string,
+  decimals: number = 2
+): string => {
+  const amount =
+    typeof rawAmount === "string" ? parseInt(rawAmount, 10) : rawAmount;
+  if (isNaN(amount)) return "0";
   return (amount / 100_000_000).toFixed(decimals);
 };

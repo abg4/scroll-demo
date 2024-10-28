@@ -2,24 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { BigNumber } from "ethers";
-import { Network, QuoteResponse, QuoteParams } from "../types";
-import {
-  networks,
-  getQuote,
-  prettyUsdc,
-  scrollConfig,
-  prettyAddress,
-} from "../utils";
+import { Network } from "../types";
+import { networks, prettyUsdc, scrollConfig } from "../utils";
 import styles from "./Deposit.module.css";
 import {
   generateMessageForMulticallHandler,
   erc20Abi,
-  spokePoolAbi,
   scaleUsdc,
 } from "../utils";
 import {
   useAccount,
-  useWriteContract,
   useChainId,
   useSwitchChain,
 } from "wagmi";
@@ -29,24 +21,32 @@ import Position from "./Position";
 import useAllowance from "../hooks/useAllowance";
 import useBalance from "../hooks/useBalance";
 import useAccountData from "../hooks/useAccountData";
+import useAcrossClient from "../hooks/useAcrossClient";
 
 const Deposit: React.FC = () => {
   const { address } = useAccount();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
-  const { data: hash, writeContract } = useWriteContract();
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(
-    networks.find((network) => network.chainId === 42161) || null
+    networks.find((network) => network.id === 42161) || null
   );
 
   const [displayAmount, setDisplayAmount] = useState("");
   const [rawAmount, setRawAmount] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [quote, setQuote] = useState<any | null>(null);
+  
+  const [depositTx, setDepositTxUrl] = useState<string>("");
+  const [fillTx, setFillTxUrl] = useState<string>("");
+  const [approveTx, setApproveTx] = useState<string>("");
+
   const [isApproving, setIsApproving] = useState(false);
   const [debouncedRawAmount, setDebouncedRawAmount] = useState(rawAmount);
   const [activeTab, setActiveTab] = useState<"deposit" | "position">("deposit");
 
+  const { acrossClient, viemClient } = address
+    ? useAcrossClient(address, selectedNetwork)
+    : { acrossClient: undefined, viemClient: undefined as any };
   const { needsApproval } = useAllowance(address, selectedNetwork, rawAmount);
   const { balance, isBalanceError, isBalanceLoading } = useBalance(
     address,
@@ -56,31 +56,34 @@ const Deposit: React.FC = () => {
 
   useEffect(() => {
     const fetchQuote = async () => {
-      if (selectedNetwork && rawAmount && address) {
+      if (selectedNetwork && rawAmount && address && acrossClient) {
         try {
+          // Quote params used for quote request
+          const route = {
+            inputToken: selectedNetwork.usdcAddress as `0x${string}`,
+            outputToken: scrollConfig.usdcAddress as `0x${string}`, // Assuming Ethereum as the destination chain
+            originChainId: selectedNetwork.id, // Assuming USDC as the token
+            destinationChainId: scrollConfig.id,
+          };
+
           // Generates a message for the quote
           const message = generateMessageForMulticallHandler(
-            rawAmount,
+            BigInt(rawAmount),
             scrollConfig.usdcAddress,
             address
           );
 
-          // Quote params used for API request
-          const quoteParams: QuoteParams = {
-            inputToken: selectedNetwork.usdcAddress,
-            outputToken: scrollConfig.usdcAddress, // Assuming Ethereum as the destination chain
-            originChainId: selectedNetwork.chainId, // Assuming USDC as the token
-            destinationChainId: scrollConfig.chainId,
-            amount: rawAmount.toString(),
-            recipient: scrollConfig.multicallHandler,
-            message,
-          };
-          const quoteResponse = await getQuote(quoteParams);
-          if (!quoteResponse) {
+          const quote = await acrossClient.getQuote({
+            route,
+            inputAmount: rawAmount.toString(),
+            crossChainMessage: message,
+          });
+
+          if (!quote) {
             console.log("Issue with quote");
             return;
           }
-          setQuote(quoteResponse);
+          setQuote(quote);
         } catch (error) {
           console.error("Error fetching quote:", error);
           setQuote(null);
@@ -105,45 +108,24 @@ const Deposit: React.FC = () => {
 
   const handleDeposit = async () => {
     try {
-      if (!quote) {
+      if (!acrossClient || !viemClient) {
         console.log("No quote generated");
         return;
       }
-      const outputAmount = BigNumber.from(rawAmount).sub(
-        quote?.totalRelayFee?.total || 0
-      );
 
-      const message = generateMessageForMulticallHandler(
-        outputAmount.toString(),
-        scrollConfig.usdcAddress,
-        address as `0x${string}`
-      );
-
-      const fillDeadlineBuffer = 18000;
-      const fillDeadline = Math.round(Date.now() / 1000) + fillDeadlineBuffer;
-      
-      // See Across docs for explanation on each arg
-      // https://docs.across.to/reference/selected-contract-functions
-      const args = [
-        address, // depositor
-        scrollConfig.multicallHandler, // recipient
-        selectedNetwork?.usdcAddress, // inputToken
-        scrollConfig.usdcAddress, // outputToken
-        rawAmount.toString(), // inputAmount
-        outputAmount.toString(), // outputAmount
-        scrollConfig.chainId, // destination chainId
-        quote?.exclusiveRelayer, // exclusive relayer
-        quote?.timestamp, // quote timestamp
-        fillDeadline, // fill deadline
-        quote?.exclusivityDeadline, // exclusivityDeadline 
-        message, // message
-      ];
-
-      writeContract({
-        address: selectedNetwork?.spokePoolAddress as `0x${string}`,
-        abi: spokePoolAbi,
-        functionName: "depositV3",
-        args,
+      await acrossClient.executeQuote({
+        deposit: quote.deposit,
+        walletClient: viemClient,
+        onProgress: (progress) => {
+          if (progress.status === "txSuccess" && progress.step === "deposit") {
+            const depositUrl = `${selectedNetwork?.blockExplorers?.default.url}/tx/${progress.txReceipt.transactionHash}`;
+            setDepositTxUrl(depositUrl);
+          }
+          if (progress.status === "txSuccess" && progress.step === "fill") {
+            const fillUrl = `${scrollConfig?.blockExplorers?.default.url}/tx/${progress.txReceipt.transactionHash}`;
+            setFillTxUrl(fillUrl);
+          }
+        },
       });
     } catch (error) {
       console.error("Error making deposit:", error);
@@ -159,12 +141,15 @@ const Deposit: React.FC = () => {
     if (!selectedNetwork || !rawAmount) return;
     setIsApproving(true);
     try {
-      writeContract({
+      const txResponse = await viemClient.writeContract({
         address: selectedNetwork.usdcAddress as `0x${string}`,
         abi: erc20Abi,
         functionName: "approve",
         args: [selectedNetwork.spokePoolAddress, BigNumber.from(rawAmount)],
+        chain: selectedNetwork,
       });
+      setApproveTx(txResponse);
+      return txResponse ? true : false;
     } catch (error) {
       console.error("Error approving token:", error);
     } finally {
@@ -172,11 +157,14 @@ const Deposit: React.FC = () => {
     }
   };
 
-  const handleApproveOrDeposit = () => {
+  const handleApproveOrDeposit = async () => {
     if (isWrongNetwork) {
       handleNetworkSwitch();
     } else if (needsApproval) {
-      handleApprove();
+      const approvalTx = await handleApprove();
+      if (approvalTx) {
+        await handleDeposit();
+      }
     } else {
       handleDeposit();
     }
@@ -192,14 +180,14 @@ const Deposit: React.FC = () => {
   const handleNetworkSwitch = async () => {
     if (selectedNetwork) {
       try {
-        await switchChain({ chainId: selectedNetwork.chainId });
+        switchChain({ chainId: selectedNetwork.id });
       } catch (error) {
         console.error("Failed to switch network:", error);
       }
     }
   };
 
-  const isWrongNetwork = selectedNetwork && chainId !== selectedNetwork.chainId;
+  const isWrongNetwork = selectedNetwork && chainId !== selectedNetwork.id;
 
   return (
     <div className={styles["network-selector"]}>
@@ -267,7 +255,7 @@ const Deposit: React.FC = () => {
               <div className={styles["quote-row"]}>
                 <span className={styles["quote-label"]}>Estimated fee:</span>
                 <span className={styles["quote-value"]}>
-                  {prettyUsdc(quote.totalRelayFee.total)} USDC
+                  {prettyUsdc(quote.fees.totalRelayFee.total)} USDC
                 </span>
               </div>
               <div className={styles["quote-row"]}>
@@ -279,42 +267,121 @@ const Deposit: React.FC = () => {
             </div>
           )}
 
-          <button
-            onClick={handleApproveOrDeposit}
-            className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
-            disabled={
-              !selectedNetwork ||
-              rawAmount === "" ||
-              rawAmount === "0" ||
-              (balance && BigNumber.from(rawAmount).gt(balance))
-            }
-          >
-            {!address
-              ? "Connect Wallet"
-              : isWrongNetwork
-              ? "Switch Network"
-              : rawAmount === "" || rawAmount === "0"
-              ? "Input Amount"
-              : balance && BigNumber.from(rawAmount).gt(balance) // Check if rawAmount is greater than balance
-              ? "Amount > Balance"
-              : needsApproval
-              ? isApproving
-                ? "Approving..."
-                : "Approve"
-              : "Deposit"}
-          </button>
+          {isWrongNetwork ? (
+            <button
+              onClick={handleNetworkSwitch}
+              className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
+            >
+              Switch Network
+            </button>
+          ) : (
+            <button
+              onClick={handleApproveOrDeposit}
+              className={`${styles["deposit-btn"]} ${styles["full-width"]}`}
+              disabled={
+                rawAmount === "" ||
+                rawAmount === "0" ||
+                (balance && BigNumber.from(rawAmount).gt(balance))
+              }
+            >
+              {!address
+                ? "Connect Wallet"
+                : rawAmount === "" || rawAmount === "0"
+                ? "Input Amount"
+                : balance && BigNumber.from(rawAmount).gt(balance) // Check if rawAmount is greater than balance
+                ? "Amount > Balance"
+                : needsApproval
+                ? isApproving
+                  ? "Approving..."
+                  : "Approve"
+                : "Deposit"}
+            </button>
+          )}
 
-          {hash && selectedNetwork?.explorerUrl && (
-            <div>
-              Transaction Hash:{" "}
-              <a
-                href={`${selectedNetwork.explorerUrl}/tx/${hash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "white", textDecoration: "underline" }}
+          {(depositTx !== "" || fillTx !== "" || approveTx) && (
+            <label className={styles["input-label"]}>Transaction Status</label>
+          )}
+
+          {approveTx && selectedNetwork?.blockExplorers?.default.url && (
+            <div style={{ textAlign: "center", margin: "10px 0" }}>
+              <button
+                onClick={() =>
+                  window.open(
+                    `${selectedNetwork?.blockExplorers?.default.url}/tx/${approveTx}`,
+                    "_blank"
+                  )
+                }
+                style={{
+                  color: "white",
+                  background: "transparent",
+                  border: "2px solid white", // Add border
+                  borderRadius: "5px", // Optional: rounded corners
+                  padding: "10px 20px", // Add padding for better appearance
+                  cursor: "pointer",
+                  transition: "background 0.3s", // Optional: transition effect
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.1)")
+                } // Change background on hover
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                } // Reset background on mouse leave
               >
-                {prettyAddress(hash)}
-              </a>
+                Approval Tx
+              </button>
+            </div>
+          )}
+
+          {depositTx && (
+            <div style={{ textAlign: "center", margin: "10px 0" }}>
+              <button
+                onClick={() => window.open(depositTx, "_blank")}
+                style={{
+                  color: "white",
+                  background: "transparent",
+                  border: "2px solid white", // Add border
+                  borderRadius: "5px", // Optional: rounded corners
+                  padding: "10px 20px", // Add padding for better appearance
+                  cursor: "pointer",
+                  transition: "background 0.3s", // Optional: transition effect
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.1)")
+                } // Change background on hover
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                } // Reset background on mouse leave
+              >
+                Deposit Tx
+              </button>
+            </div>
+          )}
+
+          {fillTx && (
+            <div style={{ textAlign: "center", margin: "10px 0" }}>
+              <button
+                onClick={() => window.open(fillTx, "_blank")}
+                style={{
+                  color: "white",
+                  background: "transparent",
+                  border: "2px solid white", // Add border
+                  borderRadius: "5px", // Optional: rounded corners
+                  padding: "10px 20px", // Add padding for better appearance
+                  cursor: "pointer",
+                  transition: "background 0.3s", // Optional: transition effect
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background =
+                    "rgba(255, 255, 255, 0.1)")
+                } // Change background on hover
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                } // Reset background on mouse leave
+              >
+                Fill Tx
+              </button>
             </div>
           )}
 

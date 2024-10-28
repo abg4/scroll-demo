@@ -15,7 +15,7 @@ const useAllowance = (
       address && selectedNetwork?.spokePoolAddress
         ? [address, selectedNetwork.spokePoolAddress as `0x${string}`]
         : undefined,
-    chainId: selectedNetwork?.chainId,
+    chainId: selectedNetwork?.id,
   });
 
   const allowanceValue = allowance

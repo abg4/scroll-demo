@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@across-protocol/app-sdk": "^0.0.3",
     "@privy-io/react-auth": "^1.81.3",
     "@privy-io/wagmi": "^0.2.12",
     "@tanstack/query-core": "^5.51.16",

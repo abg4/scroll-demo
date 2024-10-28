@@ -2,6 +2,18 @@
 # yarn lockfile v1
 
 
+"@across-protocol/app-sdk@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@across-protocol/app-sdk/-/app-sdk-0.0.3.tgz#977f437471fa9c678cc53553e7c85fdff07c8ea2"
+  integrity sha512-sTw2ONKamAcwsc9xoBQ2/LeAusD7ItGhTxaBKNMwxx7AZyOjK+QKxW+UFJ/v0+ToXXdsTtPZToay5SJsoUop+Q==
+  dependencies:
+    "@across-protocol/constants" "^3.1.15"
+
+"@across-protocol/constants@^3.1.15":
+  version "3.1.17"
+  resolved "https://registry.yarnpkg.com/@across-protocol/constants/-/constants-3.1.17.tgz#1e43c87fbab06df3a1aab8993d7c5f746838e25d"
+  integrity sha512-mW++45vP04ahogsHFM5nE7ZKV8vmdxSO8gbBeP24VFxijrIYWqhISG67EU9pnAbgAIB58pT+ZmqdXI25iDmctA==
+
 "@adraffy/ens-normalize@1.10.0":
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.10.0.tgz#d2a39395c587e092d77cbbc80acf956a54f38bf7"

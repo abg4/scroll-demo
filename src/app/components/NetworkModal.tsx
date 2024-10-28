@@ -23,7 +23,7 @@ const NetworkModal: React.FC<NetworkModalProps> = ({
         <h2>Select a Network</h2>
         <ul className={styles["network-list"]}>
           {networks.map((network) => (
-            <li key={network.chainId} onClick={() => onSelect(network)}>
+            <li key={network.id} onClick={() => onSelect(network)}>
               <img
                 src={network.imgUrl}
                 alt={network.name}

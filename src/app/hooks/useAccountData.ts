@@ -8,7 +8,7 @@ const useAccountData = (address: string | undefined) => {
     abi: aavePoolAbi,
     functionName: "getUserAccountData",
     args: address ? [address] : undefined,
-    chainId: scrollConfig?.chainId,
+    chainId: scrollConfig?.id,
   });
 
   const accountDataArray = accountData as AccountData;
